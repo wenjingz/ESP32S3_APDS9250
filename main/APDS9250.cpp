@@ -180,9 +180,7 @@ uint32_t APDS9250_get_green()
     return APDS9250_regTo24bits(values);
 }
 
-
 // get blue value
-
 
 uint32_t APDS9250_get_blue()
 {
@@ -194,7 +192,7 @@ uint32_t APDS9250_get_blue()
     return APDS9250_regTo24bits(values);
 }
 
-//get infra-red value
+// get infra-red value
 
 uint32_t APDS9250_get_IR()
 {
@@ -206,41 +204,91 @@ uint32_t APDS9250_get_IR()
     return APDS9250_regTo24bits(values);
 }
 
-
-
-
-
 void app_main(void)
 {
     i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
     i2c_master_driver_initialize();
 
-    // int8_t error = APDS9250_write_reg(dev_addr, reg_addr, &APDS9250_ALS_MODE, cnt);
-
     APDS9250_set_mode(APDS9250_ALS_MODE);
     // Set measurement rate
     APDS9250_set_measure_rate(APDS9250_MEASURE_RATE_DEFAUT);
     // set ls gain level
-    APDS9250_set_ls_gain(APDS9250_LS_GAIN_18);
-
-    // get ALS data
+    APDS9250_set_ls_gain(APDS9250_LS_GAIN_3);
+    char lux_char[8];
+    char ir_char[8];
+    char red_char[8];
+    char green_char[8];
+    char blue_char[8];
+    uint32_t LUX = 0;
+    uint32_t IR = 0;
+    uint32_t red = 0;
+    uint32_t green = 0;
+    uint32_t blue = 0;
 
     while (1)
     {
-        uint32_t LUX = APDS9250_get_als();
-        ESP_LOGI("APDL9250", "LUX = %d", LUX);
-        // ESP_LOGI("APDL9250", "LUX = %d", LUX * 35 / 3 / 100 / 7);
-        uint32_t IR = APDS9250_get_IR();
-        ESP_LOGI("APDL9250", "IR = %d",IR);
+        uint32_t LUX2 = LUX;
+        // measure lux and publish to MQTT
+        LUX = APDS9250_get_als();
+
+        // ESP_LOGI("APDL9250", "LUX = %d", LUX);
+        //  ESP_LOGI("APDL9250", "LUX = %d", LUX * 35 / 3 / 100 / 7);
+
+        if ((LUX2 - LUX) < 100000)
+        {
+            sprintf(lux_char, "%d", LUX); // xx format of string
+            esp_mqtt_client_publish(client, "canari/room1/apds9250/lux", lux_char, 0, 2, 0);
+        }
+
+        // measure IR and publish to MQTT
+
+        uint32_t IR2 = IR;
+        IR = APDS9250_get_IR();
+        // ESP_LOGI("APDL9250", "IR = %d", IR);
+
+        if ((IR2 - IR) < 100000)
+        {
+            sprintf(ir_char, "%d", IR); // xx format of string
+            esp_mqtt_client_publish(client, "canari/room1/apds9250/ir", ir_char, 0, 2, 0);
+        }
+
+        // set the sensor to CS(color sensor) mode
         APDS9250_set_mode(APDS9250_CS_MODE);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        uint32_t red = APDS9250_get_red();
-         ESP_LOGI("APDL9250", "RED = %d",red);
-        uint32_t green = APDS9250_get_green();
-         ESP_LOGI("APDL9250", "GREEN = %d",green);
-        uint32_t blue = APDS9250_get_blue();
-         ESP_LOGI("APDL9250", "BLUE= %d",blue);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+
+        // measure red value and publish to the cloud
+        uint32_t red2 = red;
+        red = APDS9250_get_red();
+        if ((red2 - red) < 100000)
+        {
+            sprintf(red_char, "%d", red); // xx format of string
+            esp_mqtt_client_publish(client, "canari/room1/apds9250/red", red_char, 0, 2, 0);
+            // ESP_LOGI("APDL9250", "RED = %d", red);
+        }
+
+        // measure green value and publish to the cloud
+        uint32_t green2 = green;
+        green = APDS9250_get_green();
+        if ((green2 - green) < 100000)
+        {
+            sprintf(green_char, "%d", green); // xx format of string
+            esp_mqtt_client_publish(client, "canari/room1/apds9250/green", green_char, 0, 2, 0);
+            // ESP_LOGI("APDL9250", "GREEN = %d", green);
+        }
+
+        // measure blue value and publish to the cloud
+
+        uint32_t blue2 = blue;
+        blue = APDS9250_get_blue();
+        if ((blue2 - blue) < 100000)
+        {
+            sprintf(blue_char, "%d", blue); // xx format of string
+            esp_mqtt_client_publish(client, "canari/room1/apds9250/blue", blue_char, 0, 2, 0);
+        }
+
+        // ESP_LOGI("APDL9250", "BLUE= %d", blue);
         APDS9250_set_mode(APDS9250_ALS_MODE);
+
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
