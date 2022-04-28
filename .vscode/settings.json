@@ -1,0 +1,14 @@
+{
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "idf.flashType": "UART",
+  "idf.portWin": "COM3",
+  "idf.adapterTargetName": "esp32s3",
+  "files.associations": {
+    "*.rmd": "markdown",
+    "sdmmc_cmd.h": "c",
+    "algorithm": "c",
+    "*.ipp": "cpp",
+    "bitset": "cpp",
+    "chrono": "cpp"
+  }
+}
