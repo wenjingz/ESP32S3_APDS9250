@@ -225,70 +225,160 @@ void app_main(void)
     uint32_t green = 0;
     uint32_t blue = 0;
 
+    uint32_t lux_value = 0;
+    uint32_t ir_value = 0;
+    uint32_t red_value = 0;
+    uint32_t green_value = 0;
+    uint32_t blue_value = 0;
+
+
+    float tristimulus_x = 0;
+    float tristimulus_y = 0;
+    float tristimulus_z = 0;
+    
+    float chromaticity_x = 0;
+    float chromaticity_y = 0;
+    float n = 0;
+    float CCT = 0;
+    
+
     while (1)
     {
         uint32_t LUX2 = LUX;
         // measure lux and publish to MQTT
         LUX = APDS9250_get_als();
 
-        // ESP_LOGI("APDL9250", "LUX = %d", LUX);
-        //  ESP_LOGI("APDL9250", "LUX = %d", LUX * 35 / 3 / 100 / 7);
-
-        if ((LUX2 - LUX) < 100000)
-        {
-            sprintf(lux_char, "%d", LUX); // xx format of string
-            esp_mqtt_client_publish(client, "canari/room1/apds9250/lux", lux_char, 0, 2, 0);
-        }
-
         // measure IR and publish to MQTT
 
         uint32_t IR2 = IR;
         IR = APDS9250_get_IR();
-        // ESP_LOGI("APDL9250", "IR = %d", IR);
-
-        if ((IR2 - IR) < 100000)
-        {
-            sprintf(ir_char, "%d", IR); // xx format of string
-            esp_mqtt_client_publish(client, "canari/room1/apds9250/ir", ir_char, 0, 2, 0);
-        }
 
         // set the sensor to CS(color sensor) mode
         APDS9250_set_mode(APDS9250_CS_MODE);
         vTaskDelay(200 / portTICK_PERIOD_MS);
 
-        // measure red value and publish to the cloud
+        // measure red value
         uint32_t red2 = red;
         red = APDS9250_get_red();
-        if ((red2 - red) < 100000)
-        {
-            sprintf(red_char, "%d", red); // xx format of string
-            esp_mqtt_client_publish(client, "canari/room1/apds9250/red", red_char, 0, 2, 0);
-            // ESP_LOGI("APDL9250", "RED = %d", red);
-        }
 
         // measure green value and publish to the cloud
         uint32_t green2 = green;
         green = APDS9250_get_green();
-        if ((green2 - green) < 100000)
-        {
-            sprintf(green_char, "%d", green); // xx format of string
-            esp_mqtt_client_publish(client, "canari/room1/apds9250/green", green_char, 0, 2, 0);
-            // ESP_LOGI("APDL9250", "GREEN = %d", green);
-        }
 
         // measure blue value and publish to the cloud
 
         uint32_t blue2 = blue;
         blue = APDS9250_get_blue();
-        if ((blue2 - blue) < 100000)
+
+        if ((((LUX2 - LUX) < 100000) && (LUX <= 262144))&&(((IR2 - IR) < 100000) && (IR <= 262144))&&(((green2 - green) < 100000) && (green <= 262144)))
         {
-            sprintf(blue_char, "%d", blue); // xx format of string
-            esp_mqtt_client_publish(client, "canari/room1/apds9250/blue", blue_char, 0, 2, 0);
+            uint32_t factor = IR > green ? 35 : 46;
+
+            uint32_t lux = ((green * factor) / 3) / 100;
+
+            sprintf(lux_char, "%d", lux); // xx format of string
+            
+           // ESP_LOGI("APDL9250", "LUX = %d", lux);
+            printf("LUX ");
+            printf("%d",LUX);
+            printf(",");
+            lux_value = LUX;
+
+        }else{
+            uint32_t factor = IR > green ? 35 : 46;
+            uint32_t lux2 = ((green * factor) / 3) / 100;
+            printf("LUX ");
+            printf("%d",LUX2);
+            printf(",");
+            lux_value = LUX2;
         }
 
-        // ESP_LOGI("APDL9250", "BLUE= %d", blue);
+        if (((IR2 - IR) < 100000) && (IR <= 262144))
+        {
+ 
+            printf("IR ");
+            printf("%d",IR);
+            printf(",");
+            //ESP_LOGI("APDL9250", "IR = %d", IR);
+            ir_value = IR;
+            // esp_mqtt_client_publish(client, "canari/room1/apds9250/ir", ir_char, 0, 2, 0);
+        }else{
+       
+            printf("IR ");
+            printf("%d",IR2);
+            printf(",");
+            ir_value = IR2;
+        }
+
+        if (((red2 - red) < 100000) && (red <= 262144))
+        {
+            
+            // esp_mqtt_client_publish(client, "canari/room1/apds9250/red", red_char, 0, 2, 0);
+            //ESP_LOGI("APDL9250", "RED = %d", red);
+            printf("RED ");
+            printf("%d",red);
+            printf(",");
+            red_value = red;
+        
+        }else{
+            
+            printf("RED ");
+            printf("%d",red2);
+            printf(",");
+            red_value = red2;
+        }
+
+        if (((green2 - green) < 100000) && (green <= 262144))
+        {
+            sprintf(green_char, "%d", green); // xx format of string
+            // esp_mqtt_client_publish(client, "canari/room1/apds9250/green", green_char, 0, 2, 0);
+            //ESP_LOGI("APDL9250", "GREEN = %d", green);
+            printf("GREEN ");
+            printf("%d",green);
+            printf(",");
+            green_value = green;
+        }else{
+           
+            printf("GREEN ");
+            printf("%d",green2);
+            printf(",");
+            green_value = green2;
+        }
+
+        if (((blue2 - blue) < 100000) && (blue <= 262144))
+        {
+            sprintf(blue_char, "%d", blue); // xx format of string
+            // esp_mqtt_client_publish(client, "canari/room1/apds9250/blue", blue_char, 0, 2, 0);
+            //ESP_LOGI("APDL9250", "BLUE= %d", blue);
+            printf("BLUE ");
+            printf("%d",blue);
+            printf(",\n");
+            blue_value = blue;
+        }else{
+           
+            printf("BLUE ");
+            printf("%d",blue2);
+            printf(",\n");
+            blue_value = blue2;
+
+        }
+
         APDS9250_set_mode(APDS9250_ALS_MODE);
 
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+
+        tristimulus_x  = -0.14282*red_value+1.54924*green_value-0.95641*blue_value;
+        tristimulus_y  = -0.32466*red_value+1.57837*green_value-0.73191*blue_value;
+        tristimulus_x  = -0.68202*red_value+0.77073*green_value-0.56332*blue_value;
+
+        chromaticity_x = tristimulus_x/(tristimulus_x+tristimulus_y+tristimulus_z);
+        chromaticity_y = tristimulus_y/(tristimulus_x+tristimulus_y+tristimulus_z);
+        
+        n = (chromaticity_x-0.3320)/(0.1858-chromaticity_y);
+
+        CCT = 444*n*n*n+3525*n*n-6823.3*n+5520.33;
+        printf("CCT: %d K ",(int)CCT);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+
     }
 }
